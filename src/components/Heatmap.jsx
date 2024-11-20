@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   format,
   eachDayOfInterval,
@@ -19,14 +19,24 @@ const HeatmapCalendar = ({ year, colorScale, habitName }) => {
   const [hoveredDate, setHoveredDate] = useState(null);
   const [maxValue, setMaxValue] = useState(0);
 
+  useEffect(() => {
+    // Actualizar el valor máximo siempre que los datos cambien
+    const max = Math.max(...Object.values(data), 0);
+    setMaxValue(max);
+  }, [data]);
+
   const getColor = (value) => {
-    if (value === undefined || value === null || maxValue === 0)
-      return '#ebedf0';
-    const normalizedValue = value / maxValue;
+    if (value === undefined || value === null || maxValue === 0) {
+      return '#f5f5f5'; // Gris para los días sin datos
+    }
+
+    const normalizedValue = Math.max(0, Math.min(1, value / maxValue));
+
     for (let [threshold, color] of colorScale) {
       if (normalizedValue <= threshold) return color;
     }
-    return colorScale[colorScale.length - 1][1];
+
+    return colorScale[colorScale.length - 1][1]; // Último color si el valor es máximo
   };
 
   const openModal = (date) => {
@@ -34,10 +44,44 @@ const HeatmapCalendar = ({ year, colorScale, habitName }) => {
   };
 
   const saveData = (value) => {
+    if (value === undefined || value === null || value === 0) {
+      setModalData(null); // Si no se ingresa un valor, cerrar el modal sin cambios
+      return;
+    }
+
     const updatedData = { ...data, [modalData.date]: value };
     setData(updatedData);
+
     if (value > maxValue) setMaxValue(value);
     setModalData(null);
+  };
+
+  const getMaxStreak = () => {
+    const sortedDates = Object.keys(data)
+      .filter((date) => data[date] > 0) // Filtrar días con valores positivos
+      .sort((a, b) => new Date(a) - new Date(b)); // Ordenar fechas en orden ascendente
+
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let previousDate = null;
+
+    sortedDates.forEach((date) => {
+      const currentDate = new Date(date);
+
+      if (
+        previousDate &&
+        (currentDate - previousDate) / (1000 * 60 * 60 * 24) === 1
+      ) {
+        currentStreak++; // Incrementar racha si el día es consecutivo
+      } else {
+        currentStreak = 1; // Reiniciar racha si no es consecutivo
+      }
+
+      maxStreak = Math.max(maxStreak, currentStreak);
+      previousDate = currentDate;
+    });
+
+    return maxStreak;
   };
 
   const months = Array.from({ length: 12 }, (_, i) => ({
@@ -45,14 +89,9 @@ const HeatmapCalendar = ({ year, colorScale, habitName }) => {
     days: daysOfYear.filter((date) => date.getMonth() === i),
   }));
 
-  const getTotalSum = () => {
-    return Object.values(data).reduce((sum, value) => sum + value, 0);
-  };
-
   return (
-    <div className="flex justify-center items-center ">
-      <div className="relative flex flex-col space-y-2 bg-white p-6 rounded-lg shadow-lg">
-        {/* Mostrar el nombre del hábito */}
+    <div className="flex justify-center items-center">
+      <div className="relative flex flex-col space-y-2 bg-white p-6 rounded-lg border">
         <h2 className="text-2xl font-semibold font-poppins mb-4">
           {habitName}
         </h2>
@@ -73,6 +112,7 @@ const HeatmapCalendar = ({ year, colorScale, habitName }) => {
                 {month.days.map((date) => {
                   const value = data[format(date, 'yyyy-MM-dd')] || 0;
                   const dayOfWeek = (getDay(date) + 6) % 7;
+
                   return (
                     <div
                       key={date}
@@ -82,7 +122,7 @@ const HeatmapCalendar = ({ year, colorScale, habitName }) => {
                         gridRowStart: dayOfWeek + 1,
                         border:
                           hoveredDate === format(date, 'yyyy-MM-dd')
-                            ? '2px solid #34D399'
+                            ? '1px solid #000000'
                             : 'none',
                       }}
                       onClick={() => openModal(format(date, 'yyyy-MM-dd'))}
@@ -106,7 +146,7 @@ const HeatmapCalendar = ({ year, colorScale, habitName }) => {
         </div>
 
         <div className="mt-4 text-lg font-semibold text-gray-800">
-          Streaks: {getTotalSum()}
+          Streaks: {getMaxStreak()}
         </div>
 
         {modalData && (

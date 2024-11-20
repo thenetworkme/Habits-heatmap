@@ -1,9 +1,27 @@
 import React, { useState } from 'react';
-import HeatmapCalendar from './Heatmap';
+import HeatmapCalendar from './Heatmap'; // Suponiendo que tienes un componente Heatmap
+import ColorPicker from './ColorPicker';
+import { Input, Button } from 'antd'; // Importamos Input y Button de Ant Design
 
 const HabitsCreation = () => {
   const [habitName, setHabitName] = useState('');
-  const [habits, setHabits] = useState([]); // Mantener una lista de hábitos
+  const [habits, setHabits] = useState([]);
+  const [colorScale, setColorScale] = useState([
+    [0, '#f5f5f5'], // Gris por defecto para los cuadros vacíos
+    [0.1, '#e0f4ff'],
+    [0.2, '#bae0f5'],
+    [0.3, '#81c8f1'],
+    [0.4, '#3ba2d3'],
+    [0.5, '#1f8bb8'],
+    [0.6, '#1a74b7'],
+    [0.7, '#13598b'],
+    [0.8, '#0a3c71'],
+    [0.9, '#003b5c'],
+    [1, '#001f3b'],
+    [2, '#000a1a'],
+    [3, '#003c14'],
+  ]); // Escala de colores por defecto (azul)
+  const [isHabitCreated, setIsHabitCreated] = useState(false);
 
   const handleInputChange = (event) => {
     setHabitName(event.target.value);
@@ -11,46 +29,52 @@ const HabitsCreation = () => {
 
   const handleButtonClick = () => {
     if (habitName.trim() !== '') {
-      setHabits((prevHabits) => [...prevHabits, habitName]); // Agregar el nuevo hábito a la lista
-      setHabitName(''); // Limpiar el campo de texto
+      setHabits((prevHabits) => [...prevHabits, habitName]);
+      setHabitName('');
+      setIsHabitCreated(true);
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      handleButtonClick();
     }
   };
 
   return (
     <div className="flex flex-col items-center space-y-4 py-8">
-      <div className="flex flex-col items-center space-y-4">
-        <input
-          type="text"
+      <div className="flex items-center space-x-2">
+        {' '}
+        {/* Contenedor con diseño flex */}
+        <Input
           value={habitName}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           placeholder="Nombre del hábito"
-          className="px-4 py-2 rounded-md border border-gray-300 text-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          size="middle"
+          style={{ width: '250px' }} // Ajustar ancho del input
         />
-        <button
+        <Button
+          type="primary"
+          size="small" // Tamaño pequeño del botón
           onClick={handleButtonClick}
-          className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-700 focus:outline-none"
+          className="h-8"
         >
-          Crear Heatmap
-        </button>
+          Crear
+        </Button>
       </div>
 
-      {/* Mostrar los heatmaps para cada hábito creado */}
-      {habits.length > 0 && (
-        <div className="mt-8 space-y-6">
-          {habits.map((habit, index) => (
-            <div key={index} className="text-center">
-              <HeatmapCalendar
-                year={2024}
-                habitName={habit}
-                colorScale={[
-                  [0.2, '#ebedf0'],
-                  [0.5, '#c6e48b'],
-                  [0.7, '#7bc96f'],
-                  [1, '#196127'],
-                ]}
-              />
-            </div>
-          ))}
+      <div>
+        <ColorPicker onChange={setColorScale} />
+      </div>
+
+      {isHabitCreated && (
+        <div>
+          <HeatmapCalendar
+            habitName={habits[habits.length - 1]}
+            year={2024}
+            colorScale={colorScale}
+          />
         </div>
       )}
     </div>

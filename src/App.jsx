@@ -4,9 +4,11 @@ import viteLogo from '/vite.svg';
 import './App.css';
 import HeatmapCalendar from './components/Heatmap';
 import HabitsCreation from './components/HabitsCreation';
+import StarsBackground from './components/StarsBackground';
 function App() {
   return (
-    <div className="">
+    <div className="app-container">
+      <StarsBackground />
       <HabitsCreation />
     </div>
   );
